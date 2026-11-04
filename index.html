@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinilink BLE Master</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --card-sub: #1f242c;
+            --accent: #2f81f7;
+            --accent-hover: #388bfd;
+            --success: #238636;
+            --success-glow: rgba(35, 134, 54, 0.4);
+            --danger: #da3633;
+            --danger-hover: #f85149;
+            --text-main: #f0f6fc;
+            --text-muted: #8b949e;
+            --border: #30363d;
+            --btn-bg: #21262d;
+            --btn-hover: #30363d;
+            --input-bg: #0d1117;
+            --slider-bg: #2b3245;
+            --active-bg: #1f6feb;
+            --modal-overlay: rgba(0, 0, 0, 0.75);
+            --seg-active-bg: #30363d;
+            --seg-active-color: #fff;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f6f8fa;
+            --card-bg: #ffffff;
+            --card-sub: #f0f3f6;
+            --accent: #0969da;
+            --accent-hover: #085cc1;
+            --success: #1a7f37;
+            --success-glow: rgba(26, 127, 55, 0.25);
+            --danger: #cf222e;
+            --danger-hover: #a40e26;
+            --text-main: #1f2328;
+            --text-muted: #656d76;
+            --border: #d0d7de;
+            --btn-bg: #f3f4f6;
+            --btn-hover: #e5e7eb;
+            --input-bg: #ffffff;
+            --slider-bg: #d8dee4;
+            --active-bg: #0969da;
+            --modal-overlay: rgba(0, 0, 0, 0.45);
+            --seg-active-bg: #ffffff;
+            --seg-active-color: #0969da;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px 14px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Top Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-weight: 600;
+            background: var(--btn-bg);
+            color: var(--text-muted);
+            transition: all 0.25s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .badge.connected {
+            background: rgba(35, 134, 54, 0.2);
+            color: #3fb950;
+            border: 1px solid rgba(63, 185, 80, 0.4);
+        }
+        [data-theme="light"] .badge.connected {
+            background: #dafbe1;
+            color: #1a7f37;
+            border-color: rgba(26, 127, 55, 0.4);
+        }
+        .badge.disconnected {
+            background: rgba(218, 54, 51, 0.2);
+            color: #f85149;
+            border: 1px solid rgba(248, 81, 73, 0.4);
+        }
+        [data-theme="light"] .badge.disconnected {
+            background: #ffebe9;
+            color: #cf222e;
+            border-color: rgba(207, 34, 46, 0.4);
+        }
+        .badge.connecting {
+            background: rgba(210, 153, 34, 0.2);
+            color: #d29922;
+            border: 1px solid rgba(210, 153, 34, 0.4);
+        }
+
+        /* Device Switcher Card */
+        .device-card {
+            background: var(--card-sub);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 20px;
+        }
+        .device-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+        .device-selector-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .device-select {
+            flex: 1;
+            background: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+        }
+        .device-select:focus {
+            border-color: var(--accent);
+        }
+
+        .btn-icon {
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: var(--btn-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.15s;
+        }
+        .btn-icon:hover {
+            background: var(--btn-hover);
+            border-color: var(--accent);
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        /* Power Button */
+        .btn-power {
+            width: 100%;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 12px;
+            background: var(--btn-bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-power.is-on {
+            background: rgba(35, 134, 54, 0.18);
+            border-color: var(--success);
+            color: var(--success);
+            box-shadow: 0 0 15px var(--success-glow);
+        }
+        [data-theme="light"] .btn-power.is-on {
+            background: #dafbe1;
+            border-color: #1a7f37;
+            color: #1a7f37;
+        }
+        .btn-power.is-off {
+            background: rgba(218, 54, 51, 0.15);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        [data-theme="light"] .btn-power.is-off {
+            background: #ffebe9;
+            border-color: #cf222e;
+            color: #cf222e;
+        }
+
+        /* Buttons & Grids */
+        button {
+            border: 1px solid var(--border);
+            background: var(--btn-bg);
+            color: var(--text-main);
+            padding: 11px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            user-select: none;
+        }
+        button:hover {
+            background: var(--btn-hover);
+            border-color: var(--text-muted);
+        }
+        button:active {
+            transform: scale(0.97);
+        }
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: var(--danger-hover);
+            color: #fff;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .grid-sources {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
+            gap: 7px;
+        }
+
+        .selectable.active {
+            background: var(--active-bg);
+            border-color: var(--active-bg);
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 0 10px rgba(47, 129, 247, 0.4);
+        }
+
+        /* Volume controls */
+        .volume-card {
+            background: var(--card-sub);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+        }
+        .volume-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .volume-val {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: var(--slider-bg);
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(47, 129, 247, 0.5);
+            transition: 0.15s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        /* Status log text */
+        #logText {
+            font-size: 13px;
+            color: var(--text-muted);
+            min-height: 20px;
+            text-align: center;
+            margin-top: 14px;
+            word-break: break-word;
+        }
+
+        /* Segmented buttons */
+        .segmented-group {
+            display: flex;
+            background: var(--card-sub);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 3px;
+            gap: 4px;
+            margin-bottom: 14px;
+        }
+        .segmented-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 10px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .segmented-btn.active {
+            background: var(--seg-active-bg);
+            color: var(--seg-active-color);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            font-weight: 600;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--modal-overlay);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            padding: 16px;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-window {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 440px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* Device items in list */
+        .device-item {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .device-item.active-item {
+            border-color: var(--accent);
+            background: rgba(47, 129, 247, 0.08);
+        }
+        .device-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .device-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .device-mac {
+            font-size: 12px;
+            font-family: monospace;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        .device-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(47, 129, 247, 0.2);
+            color: var(--accent);
+            border: 1px solid rgba(47, 129, 247, 0.3);
+            text-transform: uppercase;
+        }
+
+        .input-text {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 10px;
+        }
+        .input-text:focus {
+            border-color: var(--accent);
+        }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(128,128,128,0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 id="appTitle">🔊 Sinilink Master</h1>
+        <div id="connBadge" class="badge disconnected">● Отключено</div>
+    </header>
+
+    <!-- Выбор и управление усилителями -->
+    <div class="device-card">
+        <div class="device-card-header">
+            <span id="activeAmpLabel">Активный усилитель</span>
+            <span id="activeMacLabel" style="font-family: monospace; text-transform: none;">—</span>
+        </div>
+        <div class="device-selector-row">
+            <select id="deviceSelect" class="device-select" onchange="onSelectDevice(this.value)">
+                <!-- Заполняется динамически -->
+            </select>
+            <button class="btn-icon" id="btnReconnect" title="Переподключить" onclick="reconnectActive()">🔄</button>
+            <button class="btn-icon" id="btnScan" title="Поиск новых устройств" onclick="openScanModal()">🔍</button>
+            <button class="btn-icon" id="btnSettings" title="Настройки и усилители" onclick="openManageModal()">⚙️</button>
+        </div>
+    </div>
+
+    <!-- Питание -->
+    <div class="section">
+        <button id="btnPower" class="btn-power is-off" onclick="togglePower()">
+            <span id="powerIcon">⚡</span> <span id="powerLabel">ВКЛ / ВЫКЛ</span>
+        </button>
+    </div>
+
+    <!-- Громкость -->
+    <div class="section">
+        <div class="section-title" id="lblVolume">Громкость</div>
+        <div class="volume-card">
+            <div class="volume-header">
+                <span id="lblVolumeLevel" style="font-size: 13px; color: var(--text-muted);">Уровень (0 - 30):</span>
+                <span id="volumeValue" class="volume-val">0</span>
+            </div>
+            <div class="slider-wrapper">
+                <span style="font-size: 16px;">🔈</span>
+                <input type="range" id="volumeSlider" min="0" max="30" value="0" oninput="onVolumeSlider(this.value)" onchange="sendVolume(this.value)" />
+                <span style="font-size: 16px;">🔊</span>
+            </div>
+            <div class="grid-3">
+                <button onclick="stepVolume(-1)">-1</button>
+                <button onclick="stepVolume(-2)">-2</button>
+                <button onclick="stepVolume(+2)">+2</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Управление воспроизведением -->
+    <div class="section">
+        <div class="section-title" id="lblPlayback">Воспроизведение (BT / USB)</div>
+        <div class="grid-3">
+            <button id="btnPrev" onclick="sendPlayback('prev')">⏮ Назад</button>
+            <button id="btnPlayPause" class="btn-primary" onclick="sendPlayback('play_pause')">⏯ Плей/Пауза</button>
+            <button id="btnNext" onclick="sendPlayback('next')">Вперед ⏭</button>
+        </div>
+    </div>
+
+    <!-- Источник сигнала -->
+    <div class="section">
+        <div class="section-title" id="lblSource">Источник звука</div>
+        <div class="grid-sources" id="sourcesGrid">
+            <button class="selectable" onclick="setSource('Bluetooth')">BT</button>
+            <button class="selectable" onclick="setSource('AUX')">AUX</button>
+            <button class="selectable" onclick="setSource('USB')">USB</button>
+            <button class="selectable" onclick="setSource('TF Card')">TF Card</button>
+            <button class="selectable" onclick="setSource('PC Audio')">PC Audio</button>
+        </div>
+    </div>
+
+    <!-- Эквалайзер -->
+    <div class="section">
+        <div class="section-title" id="lblEQ">Эквалайзер (EQ)</div>
+        <div class="grid-3" id="eqGrid">
+            <button class="selectable" onclick="setEq('Normal')">Normal</button>
+            <button class="selectable" onclick="setEq('Rock')">Rock</button>
+            <button class="selectable" onclick="setEq('Pop')">Pop</button>
+            <button class="selectable" onclick="setEq('Classic')">Classic</button>
+            <button class="selectable" onclick="setEq('Jazz')">Jazz</button>
+            <button class="selectable" onclick="setEq('Country')">Country</button>
+        </div>
+    </div>
+
+    <!-- Опции -->
+    <div class="section">
+        <div class="section-title" id="lblOptions">Опции</div>
+        <button id="btnTone" style="width: 100%;" onclick="toggleTone()">
+            🔔 Сигнал подключения по Bluetooth (Вкл)
+        </button>
+    </div>
+
+    <div id="logText">Ожидание команд...</div>
+</div>
+
+<!-- ================= МОДАЛКА: ПОИСК УСТРОЙСТВ ================= -->
+<div id="scanModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-header">
+            <h3 id="modalScanTitle">🔍 Поиск Bluetooth усилителей</h3>
+            <button class="btn-icon" onclick="closeModal('scanModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 14px;">
+                <button id="btnStartScan" class="btn-primary" style="width: 100%;" onclick="triggerScan()">
+                    <span id="btnStartScanText">📡 Начать сканирование эфира</span>
+                </button>
+            </div>
+            <div id="scanStatus" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 12px; display: none;">
+                <span class="spinner" style="vertical-align: middle; margin-right: 6px;"></span>
+                <span id="scanStatusText">Поиск устройств вокруг (около 5 сек)...</span>
+            </div>
+            <div id="scanResultsList">
+                <div id="scanHintText" style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">
+                    Нажмите «Начать сканирование», чтобы найти включенные платы Sinilink.
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="btnScanClose" onclick="closeModal('scanModal')">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= МОДАЛКА: НАСТРОЙКИ И СОХРАНЕННЫЕ УСИЛИТЕЛИ ================= -->
+<div id="manageModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-header">
+            <h3 id="modalSettingsTitle">⚙️ Настройки и усилители</h3>
+            <button class="btn-icon" onclick="closeModal('manageModal')">✕</button>
+        </div>
+        <div class="modal-body">
+
+            <!-- Настройки темы и языка -->
+            <div class="section-title" id="lblSettingsSection">Настройки интерфейса</div>
+            
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;" id="lblTheme">Тема оформления:</div>
+            <div class="segmented-group">
+                <button id="themeDarkBtn" class="segmented-btn active" onclick="setTheme('dark')">🌙 Тёмная</button>
+                <button id="themeLightBtn" class="segmented-btn" onclick="setTheme('light')">☀️ Светлая</button>
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;" id="lblLang">Язык интерфейса:</div>
+            <div class="segmented-group">
+                <button id="langRuBtn" class="segmented-btn active" onclick="setLanguage('ru')">🇷🇺 Русский (RU)</button>
+                <button id="langEnBtn" class="segmented-btn" onclick="setLanguage('en')">🇬🇧 English (EN)</button>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;" />
+
+            <!-- Список усилителей -->
+            <div class="section-title" id="lblSavedList">Список устройств</div>
+            <div id="savedDevicesList" style="margin-bottom: 18px;">
+                <!-- Список сохраненных устройств -->
+            </div>
+
+            <!-- Добавить вручную -->
+            <div class="section-title" id="lblAddManual">Добавить вручную</div>
+            <div style="background: var(--card-sub); padding: 12px; border: 1px solid var(--border); border-radius: 10px;">
+                <input type="text" id="addNameInput" class="input-text" placeholder="Название (напр. Гостиная XY-AP100L)" />
+                <input type="text" id="addMacInput" class="input-text" placeholder="MAC-адрес (напр. AA:BB:CC:DD:EE:FF)" />
+                <button class="btn-primary" id="btnAddManual" style="width: 100%;" onclick="addDeviceManual()">➕ Добавить усилитель</button>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button id="btnSettingsDone" onclick="closeModal('manageModal')">Готово</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let ws = null;
+    let savedDevices = [];
+    let currentActiveMac = "";
+    let isDraggingSlider = false;
+    let currentLang = localStorage.getItem('sinilink_lang') || 'ru';
+    let currentTheme = localStorage.getItem('sinilink_theme') || 'dark';
+
+    // ---------------- Словарь языков (i18n) ----------------
+    const i18n = {
+        ru: {
+            title: "Sinilink Master",
+            connected: "● Подключено",
+            disconnected: "● Отключено",
+            connecting: "● Подключение...",
+            switching: "● Переключение...",
+            activeAmp: "Активный усилитель",
+            noSaved: "Нет сохраненных устройств",
+            reconnectTip: "Переподключить",
+            scanTip: "Поиск новых устройств",
+            settingsTip: "Настройки и усилители",
+            powerOn: "ВКЛЮЧЕН",
+            powerOff: "ВЫКЛЮЧЕН (Mute)",
+            volume: "Громкость",
+            volumeLevel: "Уровень (0 - 30):",
+            playback: "Воспроизведение (BT / USB)",
+            prev: "⏮ Назад",
+            next: "Вперед ⏭",
+            play: "▶ Воспроизведение",
+            pause: "⏸ Пауза",
+            source: "Источник звука",
+            eq: "Эквалайзер (EQ)",
+            options: "Опции",
+            toneOn: "🔔 Сигнал подключения: ВКЛ",
+            toneOff: "🔕 Сигнал подключения: ВЫКЛ",
+            waiting: "Ожидание команд...",
+            sending: "Отправка...",
+            executed: "Команда выполнена",
+            scanModalTitle: "🔍 Поиск Bluetooth усилителей",
+            startScan: "📡 Начать сканирование эфира",
+            scanningText: "Поиск устройств вокруг (около 5 сек)...",
+            scanHint: "Нажмите «Начать сканирование», чтобы найти включенные платы Sinilink.",
+            noDevicesFound: "Устройства не найдены. Проверьте, что усилитель включен.",
+            addBtn: "➕ Добавить",
+            connectBtn: "Подключить",
+            close: "Закрыть",
+            done: "Готово",
+            settingsModalTitle: "⚙️ Настройки и усилители",
+            settingsSection: "Настройки интерфейса",
+            themeLabel: "Тема оформления:",
+            themeDark: "🌙 Тёмная",
+            themeLight: "☀️ Светлая",
+            langLabel: "Язык интерфейса:",
+            savedListTitle: "Список устройств",
+            noSavedList: "Нет сохраненных устройств.",
+            addManualTitle: "Добавить вручную",
+            namePlaceholder: "Название (напр. Гостиная XY-AP100L)",
+            macPlaceholder: "MAC-адрес (напр. AA:BB:CC:DD:EE:FF)",
+            addManualBtn: "➕ Добавить усилитель",
+            activeTag: "Активен",
+            renamePrompt: "Новое название для усилителя:",
+            deleteConfirm: "Удалить усилитель {mac} из сохраненных?",
+            namePromptForFound: "Задайте имя для этого усилителя:",
+            fillMacAlert: "Пожалуйста, укажите MAC-адрес устройства!",
+            networkError: "Ошибка сети: ",
+            selectAmpFirst: "Выберите устройство из списка или выполните поиск!"
+        },
+        en: {
+            title: "Sinilink Master",
+            connected: "● Connected",
+            disconnected: "● Disconnected",
+            connecting: "● Connecting...",
+            switching: "● Switching...",
+            activeAmp: "Active Amplifier",
+            noSaved: "No saved devices",
+            reconnectTip: "Reconnect",
+            scanTip: "Scan for devices",
+            settingsTip: "Settings & Amplifiers",
+            powerOn: "POWER ON",
+            powerOff: "POWER OFF (Mute)",
+            volume: "Volume",
+            volumeLevel: "Level (0 - 30):",
+            playback: "Playback (BT / USB)",
+            prev: "⏮ Prev",
+            next: "Next ⏭",
+            play: "▶ Play",
+            pause: "⏸ Pause",
+            source: "Audio Source",
+            eq: "Equalizer (EQ)",
+            options: "Options",
+            toneOn: "🔔 BT Connection Tone: ON",
+            toneOff: "🔕 BT Connection Tone: OFF",
+            waiting: "Waiting for commands...",
+            sending: "Sending...",
+            executed: "Command executed",
+            scanModalTitle: "🔍 Scan for Bluetooth Amplifiers",
+            startScan: "📡 Start BLE Scan",
+            scanningText: "Searching for devices nearby (~5s)...",
+            scanHint: "Click «Start BLE Scan» to discover nearby Sinilink boards.",
+            noDevicesFound: "No devices found. Ensure the amplifier is powered on.",
+            addBtn: "➕ Add",
+            connectBtn: "Connect",
+            close: "Close",
+            done: "Done",
+            settingsModalTitle: "⚙️ Settings & Amplifiers",
+            settingsSection: "Interface Settings",
+            themeLabel: "Appearance Theme:",
+            themeDark: "🌙 Dark",
+            themeLight: "☀️ Light",
+            langLabel: "Interface Language:",
+            savedListTitle: "Device List",
+            noSavedList: "No saved devices.",
+            addManualTitle: "Add Manually",
+            namePlaceholder: "Name (e.g. Living Room XY-AP100L)",
+            macPlaceholder: "MAC address (e.g. AA:BB:CC:DD:EE:FF)",
+            addManualBtn: "➕ Add Amplifier",
+            activeTag: "Active",
+            renamePrompt: "New name for amplifier:",
+            deleteConfirm: "Delete amplifier {mac} from saved?",
+            namePromptForFound: "Enter friendly name for this amplifier:",
+            fillMacAlert: "Please specify device MAC address!",
+            networkError: "Network error: ",
+            selectAmpFirst: "Select a device from list or run a scan!"
+        }
+    };
+
+    function t(key) {
+        return (i18n[currentLang] && i18n[currentLang][key]) || (i18n['ru'] && i18n['ru'][key]) || key;
+    }
+
+    function applyLanguage() {
+        document.getElementById('appTitle').innerText = '🔊 ' + t('title');
+        document.getElementById('activeAmpLabel').innerText = t('activeAmp');
+        document.getElementById('btnReconnect').title = t('reconnectTip');
+        document.getElementById('btnScan').title = t('scanTip');
+        document.getElementById('btnSettings').title = t('settingsTip');
+
+        document.getElementById('lblVolume').innerText = t('volume');
+        document.getElementById('lblVolumeLevel').innerText = t('volumeLevel');
+        document.getElementById('lblPlayback').innerText = t('playback');
+        document.getElementById('btnPrev').innerText = t('prev');
+        document.getElementById('btnNext').innerText = t('next');
+        document.getElementById('lblSource').innerText = t('source');
+        document.getElementById('lblEQ').innerText = t('eq');
+        document.getElementById('lblOptions').innerText = t('options');
+
+        document.getElementById('modalScanTitle').innerText = t('scanModalTitle');
+        document.getElementById('btnStartScanText').innerText = t('startScan');
+        document.getElementById('scanStatusText').innerText = t('scanningText');
+        document.getElementById('scanHintText').innerText = t('scanHint');
+        document.getElementById('btnScanClose').innerText = t('close');
+
+        document.getElementById('modalSettingsTitle').innerText = t('settingsModalTitle');
+        document.getElementById('lblSettingsSection').innerText = t('settingsSection');
+        document.getElementById('lblTheme').innerText = t('themeLabel');
+        document.getElementById('themeDarkBtn').innerText = t('themeDark');
+        document.getElementById('themeLightBtn').innerText = t('themeLight');
+        document.getElementById('lblLang').innerText = t('langLabel');
+        document.getElementById('lblSavedList').innerText = t('savedListTitle');
+        document.getElementById('lblAddManual').innerText = t('addManualTitle');
+        document.getElementById('addNameInput').placeholder = t('namePlaceholder');
+        document.getElementById('addMacInput').placeholder = t('macPlaceholder');
+        document.getElementById('btnAddManual').innerText = t('addManualBtn');
+        document.getElementById('btnSettingsDone').innerText = t('done');
+
+        // Update segmented active buttons
+        document.getElementById('langRuBtn').classList.toggle('active', currentLang === 'ru');
+        document.getElementById('langEnBtn').classList.toggle('active', currentLang === 'en');
+
+        renderDeviceSelect();
+        renderManageList();
+        updateUi(window.lastState);
+    }
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('sinilink_lang', lang);
+        applyLanguage();
+    }
+
+    function setTheme(theme) {
+        currentTheme = theme;
+        localStorage.setItem('sinilink_theme', theme);
+        document.documentElement.setAttribute('data-theme', theme);
+
+        document.getElementById('themeDarkBtn').classList.toggle('active', theme === 'dark');
+        document.getElementById('themeLightBtn').classList.toggle('active', theme === 'light');
+    }
+
+    function setStatus(text, color = 'var(--text-muted)') {
+        const el = document.getElementById('logText');
+        el.innerText = text;
+        el.style.color = color;
+    }
+
+    function openModal(id) {
+        document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
+    }
+
+    function openScanModal() {
+        openModal('scanModal');
+    }
+
+    function openManageModal() {
+        renderManageList();
+        openModal('manageModal');
+    }
+
+    // ---------------- API Calls ----------------
+
+    async function apiPost(endpoint, body = {}) {
+        try {
+            setStatus(t('sending'), 'var(--text-muted)');
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setStatus(t('executed'), 'var(--success)');
+                if (data.state) updateUi(data.state);
+                return data;
+            } else {
+                setStatus('Error: ' + (data.error || 'Failed'), 'var(--danger)');
+                return null;
+            }
+        } catch (e) {
+            setStatus(t('networkError') + e.message, 'var(--danger)');
+            return null;
+        }
+    }
+
+    // ---------------- Device Management ----------------
+
+    async function loadDevices() {
+        try {
+            const res = await fetch('/api/devices');
+            if (res.ok) {
+                const data = await res.json();
+                savedDevices = data.devices || [];
+                currentActiveMac = data.active_mac || (savedDevices[0] ? savedDevices[0].mac : "");
+                renderDeviceSelect();
+                if (data.state) updateUi(data.state);
+            }
+        } catch (e) {
+            console.error("Failed to load devices", e);
+        }
+    }
+
+    function renderDeviceSelect() {
+        const select = document.getElementById('deviceSelect');
+        select.innerHTML = '';
+
+        if (savedDevices.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.innerText = t('noSaved');
+            select.appendChild(opt);
+            document.getElementById('activeMacLabel').innerText = '—';
+            return;
+        }
+
+        savedDevices.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.mac;
+            opt.innerText = d.name ? `${d.name} (${d.mac})` : d.mac;
+            if (d.mac.toUpperCase() === (currentActiveMac || "").toUpperCase()) {
+                opt.selected = true;
+            }
+            select.appendChild(opt);
+        });
+
+        document.getElementById('activeMacLabel').innerText = currentActiveMac || '—';
+    }
+
+    async function onSelectDevice(mac) {
+        if (!mac || mac === currentActiveMac) return;
+        currentActiveMac = mac;
+        document.getElementById('activeMacLabel').innerText = mac;
+
+        const badge = document.getElementById('connBadge');
+        badge.innerText = t('switching');
+        badge.className = 'badge connecting';
+
+        setStatus(`${t('switching')} ${mac}...`, 'var(--accent)');
+        const res = await apiPost('/api/devices/select', { mac });
+        if (res && res.status === 'ok') {
+            setStatus(`${t('connected')} ${mac}!`, 'var(--success)');
+        }
+        await loadDevices();
+    }
+
+    async function reconnectActive() {
+        if (!currentActiveMac) {
+            openScanModal();
+            return;
+        }
+        const badge = document.getElementById('connBadge');
+        badge.innerText = t('connecting');
+        badge.className = 'badge connecting';
+
+        setStatus(`${t('connecting')} ${currentActiveMac}...`, 'var(--accent)');
+        await apiPost('/api/connect', { mac: currentActiveMac });
+    }
+
+    // ---------------- Scan Devices ----------------
+
+    async function triggerScan() {
+        const btn = document.getElementById('btnStartScan');
+        const statusEl = document.getElementById('scanStatus');
+        const listEl = document.getElementById('scanResultsList');
+
+        btn.disabled = true;
+        statusEl.style.display = 'block';
+        listEl.innerHTML = '';
+
+        try {
+            const res = await fetch('/api/scan', { method: 'POST' });
+            const data = await res.json();
+            btn.disabled = false;
+            statusEl.style.display = 'none';
+
+            if (res.ok && data.devices) {
+                renderScanResults(data.devices);
+            } else {
+                listEl.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 14px;">Error: ${data.error || 'Scan failed'}</div>`;
+            }
+        } catch (e) {
+            btn.disabled = false;
+            statusEl.style.display = 'none';
+            listEl.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 14px;">${t('networkError')}${e.message}</div>`;
+        }
+    }
+
+    function renderScanResults(devices) {
+        const listEl = document.getElementById('scanResultsList');
+        if (!devices || devices.length === 0) {
+            listEl.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 20px;">${t('noDevicesFound')}</div>`;
+            return;
+        }
+
+        listEl.innerHTML = '';
+        devices.forEach(d => {
+            const isSaved = savedDevices.some(s => s.mac.toUpperCase() === d.mac.toUpperCase());
+            const item = document.createElement('div');
+            item.className = 'device-item';
+            item.innerHTML = `
+                <div class="device-info">
+                    <div class="device-title">
+                        ${d.is_sinilink ? '🔊' : '📡'} ${escapeHtml(d.name)}
+                        ${d.is_sinilink ? '<span class="device-tag">Sinilink</span>' : ''}
+                    </div>
+                    <div class="device-mac">${d.mac} • RSSI: ${d.rssi} dBm</div>
+                </div>
+                <div>
+                    <button class="${isSaved ? '' : 'btn-primary'}" onclick="saveAndConnectDevice('${d.mac}', '${escapeJs(d.name)}')">
+                        ${isSaved ? t('connectBtn') : t('addBtn')}
+                    </button>
+                </div>
+            `;
+            listEl.appendChild(item);
+        });
+    }
+
+    async function saveAndConnectDevice(mac, defaultName) {
+        let name = defaultName;
+        if (!savedDevices.some(s => s.mac.toUpperCase() === mac.toUpperCase())) {
+            const prompted = prompt(t('namePromptForFound'), defaultName || "Sinilink");
+            if (prompted !== null && prompted.trim()) {
+                name = prompted.trim();
+            }
+            await apiPost('/api/devices', { mac, name });
+        }
+        closeModal('scanModal');
+        await onSelectDevice(mac);
+    }
+
+    // ---------------- Manage Devices Modal ----------------
+
+    function renderManageList() {
+        const list = document.getElementById('savedDevicesList');
+        list.innerHTML = '';
+
+        if (savedDevices.length === 0) {
+            list.innerHTML = `<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px;">${t('noSavedList')}</div>`;
+            return;
+        }
+
+        savedDevices.forEach(d => {
+            const isActive = currentActiveMac && d.mac.toUpperCase() === currentActiveMac.toUpperCase();
+            const item = document.createElement('div');
+            item.className = `device-item ${isActive ? 'active-item' : ''}`;
+            item.innerHTML = `
+                <div class="device-info">
+                    <div class="device-title">
+                        🔊 <span id="name_span_${d.mac}">${escapeHtml(d.name)}</span>
+                        ${isActive ? `<span class="device-tag">${t('activeTag')}</span>` : ''}
+                    </div>
+                    <div class="device-mac">${d.mac}</div>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn-icon" title="Rename" onclick="renameDevicePrompt('${d.mac}', '${escapeJs(d.name)}')">✏️</button>
+                    ${!isActive ? `<button class="btn-icon btn-primary" title="Select" onclick="selectFromManage('${d.mac}')">✓</button>` : ''}
+                    <button class="btn-icon btn-danger" title="Delete" onclick="deleteDevice('${d.mac}')">🗑</button>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    async function renameDevicePrompt(mac, oldName) {
+        const newName = prompt(t('renamePrompt'), oldName);
+        if (newName !== null && newName.trim() && newName.trim() !== oldName) {
+            await apiPost('/api/devices', { mac, name: newName.trim() });
+            await loadDevices();
+            renderManageList();
+        }
+    }
+
+    async function selectFromManage(mac) {
+        closeModal('manageModal');
+        await onSelectDevice(mac);
+    }
+
+    async function deleteDevice(mac) {
+        const confirmMsg = t('deleteConfirm').replace('{mac}', mac);
+        if (!confirm(confirmMsg)) return;
+        try {
+            const res = await fetch('/api/devices', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mac })
+            });
+            if (res.ok) {
+                await loadDevices();
+                renderManageList();
+            }
+        } catch (e) {
+            alert(t('networkError') + e.message);
+        }
+    }
+
+    async function addDeviceManual() {
+        const name = document.getElementById('addNameInput').value.trim();
+        const mac = document.getElementById('addMacInput').value.trim();
+        if (!mac) {
+            alert(t('fillMacAlert'));
+            return;
+        }
+
+        await apiPost('/api/devices', { mac, name: name || "Sinilink" });
+        document.getElementById('addNameInput').value = '';
+        document.getElementById('addMacInput').value = '';
+        await loadDevices();
+        renderManageList();
+        setStatus(`${t('addBtn')}: ${mac}`, 'var(--success)');
+    }
+
+    // ---------------- UI State Updates ----------------
+
+    function updateUi(state) {
+        window.lastState = state;
+        if (!state) return;
+
+        // Badge
+        const badge = document.getElementById('connBadge');
+        if (state.connected) {
+            badge.innerText = t('connected');
+            badge.className = 'badge connected';
+        } else {
+            badge.innerText = t('disconnected');
+            badge.className = 'badge disconnected';
+        }
+
+        if (state.mac) {
+            currentActiveMac = state.mac;
+            document.getElementById('activeMacLabel').innerText = state.mac;
+            const select = document.getElementById('deviceSelect');
+            if (select && select.value !== state.mac) {
+                select.value = state.mac;
+            }
+        }
+
+        // Power button
+        const powerBtn = document.getElementById('btnPower');
+        const powerLabel = document.getElementById('powerLabel');
+        if (state.is_on) {
+            powerBtn.className = 'btn-power is-on';
+            powerLabel.innerText = t('powerOn');
+        } else {
+            powerBtn.className = 'btn-power is-off';
+            powerLabel.innerText = t('powerOff');
+        }
+
+        // Volume
+        if (!isDraggingSlider) {
+            document.getElementById('volumeSlider').value = state.volume;
+            document.getElementById('volumeValue').innerText = state.volume;
+        }
+
+        // Play/Pause button
+        const ppBtn = document.getElementById('btnPlayPause');
+        if (state.is_playing) {
+            ppBtn.innerText = t('pause');
+        } else {
+            ppBtn.innerText = t('play');
+        }
+
+        // Source buttons highlight
+        const srcButtons = document.querySelectorAll('#sourcesGrid button');
+        srcButtons.forEach(btn => {
+            const btnText = btn.innerText.trim();
+            const isMatch = (btnText === 'BT' && state.source === 'Bluetooth') ||
+                            (btnText === state.source);
+            if (isMatch) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        // EQ buttons highlight
+        const eqButtons = document.querySelectorAll('#eqGrid button');
+        eqButtons.forEach(btn => {
+            if (btn.innerText.trim() === state.eq_mode) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        // Prompt tone button (Сигнал подключения по Bluetooth)
+        const toneBtn = document.getElementById('btnTone');
+        if (state.prompt_tone) {
+            toneBtn.innerText = t('toneOn');
+            toneBtn.style.borderColor = 'var(--success)';
+            toneBtn.style.color = 'var(--success)';
+        } else {
+            toneBtn.innerText = t('toneOff');
+            toneBtn.style.borderColor = 'var(--border)';
+            toneBtn.style.color = 'var(--text-muted)';
+        }
+    }
+
+    // ---------------- WebSocket ----------------
+
+    function initWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            console.log('WS connected');
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'state') {
+                    updateUi(msg.data);
+                }
+            } catch (err) {
+                console.error('WS parse error', err);
+            }
+        };
+
+        ws.onclose = () => {
+            console.log('WS closed, reconnecting in 2s...');
+            setTimeout(initWebSocket, 2000);
+        };
+    }
+
+    // ---------------- Controls Actions ----------------
+
+    async function togglePower() {
+        await apiPost('/api/power', { action: 'toggle' });
+    }
+
+    function onVolumeSlider(val) {
+        isDraggingSlider = true;
+        document.getElementById('volumeValue').innerText = val;
+    }
+
+    async function sendVolume(val) {
+        isDraggingSlider = false;
+        await apiPost('/api/volume', { volume: parseInt(val) });
+    }
+
+    async function stepVolume(step) {
+        await apiPost('/api/volume', { step: parseInt(step) });
+    }
+
+    async function setSource(source) {
+        await apiPost('/api/source', { source });
+    }
+
+    async function sendPlayback(command) {
+        await apiPost('/api/playback', { command });
+    }
+
+    async function setEq(mode) {
+        await apiPost('/api/eq', { mode });
+    }
+
+    async function toggleTone() {
+        await apiPost('/api/prompt_tone');
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function escapeJs(str) {
+        if (!str) return '';
+        return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    window.onload = async () => {
+        setTheme(currentTheme);
+        applyLanguage();
+        initWebSocket();
+        await loadDevices();
+    };
+</script>
+
+</body>
+</html>
